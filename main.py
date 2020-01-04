@@ -1,14 +1,13 @@
 # Work with Python 3.6
 import discord
-from googletrans import Translator
+import googletrans
 import re
-from iso639 import languages
 
 
 class MyClient(discord.Client):
     channel_a = None
     channel_b = None
-    translator = Translator(service_urls=['translate.google.com'])
+    translator = googletrans.Translator(service_urls=['translate.google.com'])
     emoji_pattern = re.compile("["
                                u"\U0001F600-\U0001F64F"  # emoticons
                                u"\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -16,6 +15,7 @@ class MyClient(discord.Client):
                                u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
                                "]+", flags=re.UNICODE)
     lang_dest = 'en'
+    languages = {v: k for k, v in googletrans.LANGUAGES.items()}
 
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
@@ -25,16 +25,26 @@ class MyClient(discord.Client):
         if message.author == client.user:
             return
 
+        if message.content.startswith('!languages'):
+            await message.channel.send(embed=discord.Embed(description=', '.join(map(lambda x: x.capitalize(), self.languages.keys())), title='Possible languages'))
+            return
+
         # Change language destination command in any channel
         if message.content.startswith('!lang'):
+            if message.content == '!lang':
+                await message.channel.send(f'Current channel language is {googletrans.LANGUAGES[self.lang_dest].capitalize()}')
+                return
             try:
-                lang = languages.get(name=message.content[6:].capitalize())
+                self.lang_dest = self.languages[message.content[6:].lower()]
             except Exception:
                 await message.channel.send('Language not found.')
                 return
 
-            self.lang_dest = lang.alpha2
-            await message.channel.send('Language changed.')
+            await message.channel.send(f'Language changed to {message.content[6:].capitalize()}.')
+            return
+
+        if message.content[0] == '!':
+            await message.channel.send('Command unknown.')
             return
 
         # Process only source and destination channels
@@ -44,9 +54,9 @@ class MyClient(discord.Client):
         # Get channels
         if not self.channel_a or not self.channel_b:
             self.channel_b = next(filter(lambda c: c.name == 'we-no-speak-no-dutchericano',
-                                       message.guild.channels))
+                                         message.guild.channels))
             self.channel_a = next(filter(lambda c: c.name == '🧦ts_in_2k16_lul🧦',
-                                       message.guild.channels))
+                                         message.guild.channels))
 
         # Set destination
         dest = None
@@ -71,4 +81,4 @@ class MyClient(discord.Client):
 
 
 client = MyClient()
-client.run('NjYyNDQ4Nzk3NjE5NTg1MDY0.Xg6POQ.nyq0BJkdd9RLQaBcfQEMNoNxapQ')
+client.run('NjYyNDQ4Nzk3NjE5NTg1MDY0.XhAMGg.F0OPEuRD9-shg2FxNu7Z9E6ZhrA')
